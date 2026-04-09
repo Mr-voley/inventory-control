@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Master - Edit Function</title>
+    
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="app-container">
+        
+<aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">GS</div>
+                <span class="brand-name">STOCK MASTER</span>
+            </div>
+            
+            <nav class="menu">
+                
+<div class="menu-item inventory-active" data-tab="inventory-tab">
+                    <span class="icon">📦</span>
+                    <span class="label">Inventory</span>
+                </div>
+                <div class="menu-item" data-tab="dashboard-tab">
+                    <span class="icon">📊</span>
+                    <span class="label">Dashboard</span>
+                </div>
+                <div class="menu-item">
+                    <span class="icon">⚙️</span>
+                    <span class="label">Settings</span>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="menu-item">
+                    <span class="icon">🚪</span>
+                    <span class="label">Log Out</span>
+                </div>
+            </div>
+        </aside>
+
+        
+<main class="main-content">
+            
+            
+<section id="inventory-tab" class="tab-content active">
+                <header class="top-bar">
+                    <div class="search-box">
+                        <input type="text" id="searchInput" placeholder="Search product or SKU...">
+                    </div>
+                    
+                    
+<div class="filter-group">
+                        <select class="btn-dark-filter" id="companyFilter">
+                            <option value="">All Companies</option>
+                        </select>
+                        <select class="btn-dark-filter" id="idFilter">
+                            <option value="">All IDs</option>
+                        </select>
+                        <button class="btn-add-item" id="addItemButton">+ Add Item</button>
+                        
+                        <div class="view-toggle">
+                            <button class="active" id="listViewButton" data-view="list" type="button">☰</button>
+                            <button id="gridViewButton" data-view="grid" type="button">☷</button>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="table-container" id="tableContainer">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox"></th>
+                                <th>No ID</th>
+                                <th>Product</th>
+                                <th>SKU</th>
+                                <th>Company</th>
+                                <th>Stock</th>
+                                <th>Last Modified</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryBody">
+                            
+</tbody>
+                    </table>
+                </div>
+
+                <div class="grid-container hidden" id="inventoryGrid"></div>
+            </section>
+
+            
+<section id="dashboard-tab" class="tab-content">
+                <div class="dashboard-header">
+                    <h1>Dashboard</h1>
+                    <p>Visao geral do estoque em tempo real.</p>
+                </div>
+
+                <div class="kpi-grid">
+                    <article class="kpi-card">
+                        <p class="kpi-label">Total de Itens</p>
+                        <h3 id="kpiTotalItems">0</h3>
+                    </article>
+                    <article class="kpi-card">
+                        <p class="kpi-label">Estoque Total</p>
+                        <h3 id="kpiTotalStock">0</h3>
+                    </article>
+                    <article class="kpi-card">
+                        <p class="kpi-label">Empresas Ativas</p>
+                        <h3 id="kpiCompanies">0</h3>
+                    </article>
+                    <article class="kpi-card warning">
+                        <p class="kpi-label">Baixo Estoque (<= 100)</p>
+                        <h3 id="kpiLowStock">0</h3>
+                    </article>
+                </div>
+
+                <div class="dashboard-panels">
+                    <section class="panel-card">
+                        <h4>Top Empresas por Estoque</h4>
+                        <div id="companyChart" class="company-chart"></div>
+                    </section>
+                    <section class="panel-card">
+                        <h4>Alertas de Baixo Estoque</h4>
+                        <div class="low-stock-wrapper">
+                            <table class="low-stock-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Produto</th>
+                                        <th>Empresa</th>
+                                        <th>Estoque</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lowStockBody"></tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    
+    
+<div id="modalEditOverlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Edit Item: <span id="pEditId"></span></h3>
+            
+            <div class="form-group">
+                <label>Product Name</label>
+                <input type="text" id="pEditName">
+            </div>
+            
+            <div class="form-group">
+                <label>SKU (Cannot Change)</label>
+                <input type="text" id="pEditSku" disabled class="disabled-input">
+            </div>
+            
+            <div class="form-group">
+                <label>Stock Quantity</label>
+                <input type="number" id="pEditStock">
+            </div>
+            
+            <div class="modal-actions">
+                <button class="btn-cancel" id="cancelEditButton" type="button">Cancel</button>
+                <button class="btn-save" id="saveEditButton" type="button">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalAddOverlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Add Item</h3>
+
+            <div class="form-group">
+                <label>Product Name</label>
+                <input type="text" id="pAddName" placeholder="Ex: Luva Tatica">
+            </div>
+
+            <div class="form-group">
+                <label>SKU</label>
+                <input type="text" id="pAddSku" value="Automatico" disabled class="disabled-input">
+            </div>
+
+            <div class="form-group">
+                <label>Company</label>
+                <input type="text" id="pAddCompany" placeholder="Ex: Veritas">
+            </div>
+
+            <div class="form-group">
+                <label>Stock Quantity</label>
+                <input type="number" id="pAddStock" min="0" step="1" placeholder="0">
+            </div>
+
+            <div class="form-group">
+                <label>No ID</label>
+                <input type="text" id="pAddId" value="Automatico" disabled class="disabled-input">
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-cancel" id="cancelAddButton" type="button">Cancel</button>
+                <button class="btn-save" id="saveAddButton" type="button">Add Item</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

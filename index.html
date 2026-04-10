@@ -75,6 +75,7 @@
                                 <th>Product</th>
                                 <th>SKU</th>
                                 <th>Company</th>
+                                <th>Size</th>
                                 <th>Stock</th>
                                 <th>Last Modified</th>
                                 <th>Actions</th>
@@ -109,15 +110,26 @@
                         <h3 id="kpiCompanies">0</h3>
                     </article>
                     <article class="kpi-card warning">
-                        <p class="kpi-label">Baixo Estoque (<= 100)</p>
+                        <p class="kpi-label">Alerta Reposição (&lt; 10)</p>
                         <h3 id="kpiLowStock">0</h3>
                     </article>
                 </div>
 
+                <div class="dashboard-filters">
+                    <label for="dashboardCompanyFilter">Filtrar empresa nos gráficos:</label>
+                    <select class="custom-select-native" id="dashboardCompanyFilter">
+                        <option value="">Todas as empresas</option>
+                    </select>
+                </div>
+
                 <div class="dashboard-panels">
                     <section class="panel-card">
-                        <h4>Top Empresas por Estoque</h4>
+                        <h4>Total Estoque por Empresa</h4>
                         <div id="companyChart" class="company-chart"></div>
+                    </section>
+                    <section class="panel-card">
+                        <h4>Peças por Produto (Empresa Filtrada)</h4>
+                        <div id="companyProductsChart" class="company-chart"></div>
                     </section>
                     <section class="panel-card">
                         <h4>Alertas de Baixo Estoque</h4>
@@ -128,7 +140,9 @@
                                         <th>ID</th>
                                         <th>Produto</th>
                                         <th>Empresa</th>
+                                        <th>Tamanho</th>
                                         <th>Estoque</th>
+                                        <th>Status</th>
                                     </tr>
                                 </thead>
                                 <tbody id="lowStockBody"></tbody>
@@ -158,6 +172,11 @@
             <div class="form-group">
                 <label>Stock Quantity</label>
                 <input type="number" id="pEditStock">
+            </div>
+
+            <div class="form-group">
+                <label>Size</label>
+                <input type="text" id="pEditSize" placeholder="Ex: P, M, G, 42">
             </div>
             
             <div class="modal-actions">
@@ -189,6 +208,11 @@
             <div class="form-group">
                 <label>Stock Quantity</label>
                 <input type="number" id="pAddStock" min="0" step="1" placeholder="0">
+            </div>
+
+            <div class="form-group">
+                <label>Size</label>
+                <input type="text" id="pAddSize" placeholder="Ex: P, M, G, 42">
             </div>
 
             <div class="form-group">

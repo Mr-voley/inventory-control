@@ -6,61 +6,31 @@ const seedInventoryData = [
 ];
 
 function formatLastMod(dateValue) {
-    if (!dateValue) {
-        return "-";
-    }
+    if (!dateValue) return "-";
     return new Date(dateValue).toLocaleString("pt-BR");
 }
 
 const editSvgIcon = `
-    <img
-        src="public/edit-static.svg"
-        data-static-src="public/edit-static.svg"
-        data-anim-src="public/edit.gif"
-        alt="Edit"
-        class="edit-icon icon-animatable"
-        width="24"
-        height="24"
-    />
+    <img src="public/edit-static.svg" data-static-src="public/edit-static.svg" data-anim-src="public/edit.gif" alt="Edit" class="edit-icon icon-animatable" width="24" height="24" />
 `;
 
 const deleteSvgIcon = `
-    <img
-        src="public/delete-static.svg"
-        data-static-src="public/delete-static.svg"
-        data-anim-src="public/delete.gif"
-        alt="Delete"
-        class="delete-icon icon-animatable"
-        width="24"
-        height="24"
-    />
+    <img src="public/delete-static.svg" data-static-src="public/delete-static.svg" data-anim-src="public/delete.gif" alt="Delete" class="delete-icon icon-animatable" width="24" height="24" />
 `;
 
 class InventoryRepository {
-    constructor(initialData = []) {
-        this.items = [...initialData];
-    }
-
-    async list() {
-        return [...this.items];
-    }
-
-    async getById(id) {
-        return this.items.find((item) => item.id === id) || null;
-    }
-
+    constructor(initialData = []) { this.items = [...initialData]; }
+    async list() { return [...this.items]; }
+    async getById(id) { return this.items.find((item) => item.id === id) || null; }
     async updateById(id, payload) {
         let updatedItem = null;
         this.items = this.items.map((item) => {
-            if (item.id !== id) {
-                return item;
-            }
+            if (item.id !== id) return item;
             updatedItem = { ...item, ...payload };
             return updatedItem;
         });
         return updatedItem;
     }
-
     async create(payload) {
         const newItem = {
             id: `LOCAL-${Date.now()}`,
@@ -73,7 +43,6 @@ class InventoryRepository {
         this.items = [newItem, ...this.items];
         return newItem;
     }
-
     async removeById(id) {
         const before = this.items.length;
         this.items = this.items.filter((item) => item.id !== id);
@@ -86,188 +55,59 @@ class SupabaseInventoryRepository {
         this.supabase = supabaseClient;
         this.table = "inventory_items";
     }
-
     async list() {
-        const { data, error } = await this.supabase
-            .from(this.table)
-            .select("id, name, sku, company, stock, last_mod")
-            .order("id", { ascending: true });
-
-        if (error) {
-            throw new Error(`Falha ao listar inventario: ${error.message}`);
-        }
-
-        return data.map((item) => ({
-            id: item.id,
-            name: item.name,
-            sku: item.sku,
-            company: item.company,
-            stock: item.stock,
-            lastMod: formatLastMod(item.last_mod),
-        }));
+        const { data, error } = await this.supabase.from(this.table).select("id, name, sku, company, stock, last_mod").order("id", { ascending: true });
+        if (error) throw new Error(`Falha ao listar inventario: ${error.message}`);
+        return data.map((item) => ({ id: item.id, name: item.name, sku: item.sku, company: item.company, stock: item.stock, lastMod: formatLastMod(item.last_mod) }));
     }
-
     async getById(id) {
-        const { data, error } = await this.supabase
-            .from(this.table)
-            .select("id, name, sku, company, stock, last_mod")
-            .eq("id", id)
-            .single();
-
-        if (error) {
-            if (error.code === "PGRST116") {
-                return null;
-            }
-            throw new Error(`Falha ao buscar item ${id}: ${error.message}`);
-        }
-
-        return {
-            id: data.id,
-            name: data.name,
-            sku: data.sku,
-            company: data.company,
-            stock: data.stock,
-            lastMod: formatLastMod(data.last_mod),
-        };
+        const { data, error } = await this.supabase.from(this.table).select("id, name, sku, company, stock, last_mod").eq("id", id).single();
+        if (error) { if (error.code === "PGRST116") return null; throw new Error(`Falha ao buscar item ${id}: ${error.message}`); }
+        return { id: data.id, name: data.name, sku: data.sku, company: data.company, stock: data.stock, lastMod: formatLastMod(data.last_mod) };
     }
-
     async create(payload) {
-        const { data, error } = await this.supabase
-            .from(this.table)
-            .insert({
-                name: payload.name,
-                company: payload.company,
-                stock: payload.stock,
-                last_mod: new Date().toISOString(),
-            })
-            .select("id, name, sku, company, stock, last_mod")
-            .single();
-
-        if (error) {
-            throw new Error(`Falha ao criar item: ${error.message}`);
-        }
-
-        return {
-            id: data.id,
-            name: data.name,
-            sku: data.sku,
-            company: data.company,
-            stock: data.stock,
-            lastMod: formatLastMod(data.last_mod),
-        };
+        const { data, error } = await this.supabase.from(this.table).insert({ name: payload.name, company: payload.company, stock: payload.stock, last_mod: new Date().toISOString() }).select("id, name, sku, company, stock, last_mod").single();
+        if (error) throw new Error(`Falha ao criar item: ${error.message}`);
+        return { id: data.id, name: data.name, sku: data.sku, company: data.company, stock: data.stock, lastMod: formatLastMod(data.last_mod) };
     }
-
     async updateById(id, payload) {
-        const { data, error } = await this.supabase
-            .from(this.table)
-            .update({
-                ...payload,
-                last_mod: new Date().toISOString(),
-            })
-            .eq("id", id)
-            .select("id, name, sku, company, stock, last_mod")
-            .single();
-
-        if (error) {
-            if (error.code === "PGRST116") {
-                return null;
-            }
-            throw new Error(`Falha ao atualizar item ${id}: ${error.message}`);
-        }
-
-        return {
-            id: data.id,
-            name: data.name,
-            sku: data.sku,
-            company: data.company,
-            stock: data.stock,
-            lastMod: formatLastMod(data.last_mod),
-        };
+        const { data, error } = await this.supabase.from(this.table).update({ ...payload, last_mod: new Date().toISOString() }).eq("id", id).select("id, name, sku, company, stock, last_mod").single();
+        if (error) { if (error.code === "PGRST116") return null; throw new Error(`Falha ao atualizar item ${id}: ${error.message}`); }
+        return { id: data.id, name: data.name, sku: data.sku, company: data.company, stock: data.stock, lastMod: formatLastMod(data.last_mod) };
     }
-
     async removeById(id) {
-        const { error } = await this.supabase
-            .from(this.table)
-            .delete()
-            .eq("id", id);
-
-        if (error) {
-            throw new Error(`Falha ao excluir item ${id}: ${error.message}`);
-        }
-
+        const { error } = await this.supabase.from(this.table).delete().eq("id", id);
+        if (error) throw new Error(`Falha ao excluir item ${id}: ${error.message}`);
         return true;
     }
 }
 
 class InventoryService {
-    constructor(repository) {
-        this.repository = repository;
-    }
-
-    async getInventory() {
-        return this.repository.list();
-    }
-
+    constructor(repository) { this.repository = repository; }
+    async getInventory() { return this.repository.list(); }
     async searchInventory(term) {
         const normalizedTerm = term.trim().toLowerCase();
         const items = await this.repository.list();
-        if (!normalizedTerm) {
-            return items;
-        }
-        return items.filter((item) => (
-            item.name.toLowerCase().includes(normalizedTerm)
-            || item.sku.toLowerCase().includes(normalizedTerm)
-            || item.id.toLowerCase().includes(normalizedTerm)
-            || item.company.toLowerCase().includes(normalizedTerm)
-        ));
+        if (!normalizedTerm) return items;
+        return items.filter((item) => (item.name.toLowerCase().includes(normalizedTerm) || item.sku.toLowerCase().includes(normalizedTerm) || item.id.toLowerCase().includes(normalizedTerm) || item.company.toLowerCase().includes(normalizedTerm)));
     }
-
     async updateInventoryItem(id, payload) {
         const safeName = payload.name.trim();
         const safeStock = Number(payload.stock);
-
-        if (!safeName) {
-            throw new Error("Nome do produto nao pode ficar vazio.");
-        }
-
-        if (!Number.isInteger(safeStock) || safeStock < 0) {
-            throw new Error("Estoque precisa ser um numero inteiro maior ou igual a zero.");
-        }
-
-        const updatedItem = await this.repository.updateById(id, {
-            name: safeName,
-            stock: safeStock,
-        });
-
-        if (!updatedItem) {
-            throw new Error("Item nao encontrado para atualizacao.");
-        }
-
+        if (!safeName) throw new Error("Nome do produto nao pode ficar vazio.");
+        if (!Number.isInteger(safeStock) || safeStock < 0) throw new Error("Estoque precisa ser um numero inteiro maior ou igual a zero.");
+        const updatedItem = await this.repository.updateById(id, { name: safeName, stock: safeStock });
+        if (!updatedItem) throw new Error("Item nao encontrado para atualizacao.");
         return updatedItem;
     }
-
-    async deleteInventoryItem(id) {
-        return this.repository.removeById(id);
-    }
-
+    async deleteInventoryItem(id) { return this.repository.removeById(id); }
     async createInventoryItem(payload) {
         const safeName = payload.name.trim();
         const safeCompany = payload.company.trim();
         const safeStock = Number(payload.stock);
-
-        if (!safeName || !safeCompany) {
-            throw new Error("Nome e empresa sao obrigatorios.");
-        }
-
-        if (!Number.isInteger(safeStock) || safeStock < 0) {
-            throw new Error("Estoque precisa ser um numero inteiro maior ou igual a zero.");
-        }
-
-        return this.repository.create({
-            name: safeName,
-            company: safeCompany,
-            stock: safeStock,
-        });
+        if (!safeName || !safeCompany) throw new Error("Nome e empresa sao obrigatorios.");
+        if (!Number.isInteger(safeStock) || safeStock < 0) throw new Error("Estoque precisa ser um numero inteiro.");
+        return this.repository.create({ name: safeName, company: safeCompany, stock: safeStock });
     }
 }
 
@@ -327,52 +167,97 @@ function buildRepository() {
 
 const inventoryService = new InventoryService(buildRepository());
 
+// LÓGICA DO CUSTOM DROPDOWN (FIGMA STYLE)
+function setupCustomSelects() {
+    document.querySelectorAll('.custom-select-native').forEach(select => {
+        // Remove wrapper antigo se existir (útil para quando atualizamos as options via JS)
+        if (select.nextElementSibling && select.nextElementSibling.classList.contains('custom-select-wrapper')) {
+            select.nextElementSibling.remove();
+        }
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'custom-select-wrapper';
+        select.parentNode.insertBefore(wrapper, select.nextSibling);
+        wrapper.appendChild(select);
+        select.style.display = 'none';
+
+        const trigger = document.createElement('div');
+        trigger.className = 'custom-select-trigger';
+        trigger.tabIndex = 0;
+
+        const triggerText = document.createElement('span');
+        triggerText.textContent = select.options[select.selectedIndex]?.text || '';
+        trigger.appendChild(triggerText);
+
+        const arrow = document.createElement('svg');
+        arrow.className = 'arrow-icon';
+        arrow.innerHTML = '<path d="M7 10l5 5 5-5H7z" fill="currentColor"/>';
+        arrow.setAttribute('viewBox', '0 0 24 24');
+        arrow.style.width = '20px'; arrow.style.height = '20px';
+        trigger.appendChild(arrow);
+
+        wrapper.appendChild(trigger);
+
+        const optionsList = document.createElement('div');
+        optionsList.className = 'custom-options';
+
+        Array.from(select.options).forEach(option => {
+            const customOption = document.createElement('div');
+            customOption.className = `custom-option ${option.selected ? 'selected' : ''}`;
+            customOption.textContent = option.text;
+            
+            customOption.addEventListener('click', () => {
+                select.value = option.value;
+                triggerText.textContent = option.text;
+                optionsList.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));
+                customOption.classList.add('selected');
+                wrapper.classList.remove('open');
+                select.dispatchEvent(new Event('change')); // Dispara evento pro JS original
+            });
+            optionsList.appendChild(customOption);
+        });
+
+        wrapper.appendChild(optionsList);
+
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.querySelectorAll('.custom-select-wrapper').forEach(w => {
+                if (w !== wrapper) w.classList.remove('open');
+            });
+            wrapper.classList.toggle('open');
+        });
+    });
+
+    // Fechar dropdown ao clicar fora
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.custom-select-wrapper')) {
+            document.querySelectorAll('.custom-select-wrapper').forEach(w => w.classList.remove('open'));
+        }
+    });
+}
+
 function showToast(type, title, message) {
     const toast = document.createElement("div");
     toast.className = `toast ${type}`;
-    toast.innerHTML = `
-        <div class="toast-icon">${type === "success" ? "✓" : "!"}</div>
-        <div>
-            <div class="toast-title">${title}</div>
-            <div class="toast-message">${message}</div>
-        </div>
-    `;
+    toast.innerHTML = `<div class="toast-icon">${type === "success" ? "✓" : "!"}</div><div><div class="toast-title">${title}</div><div class="toast-message">${message}</div></div>`;
     elements.toastContainer.appendChild(toast);
     setTimeout(() => toast.remove(), 3200);
 }
 
 function animateActionIcon(target) {
     const icon = target.closest("button[data-action]")?.querySelector(".icon-animatable");
-    if (!icon) {
-        return;
-    }
-
+    if (!icon || icon.dataset.animating === "1") return;
     const staticSrc = icon.dataset.staticSrc;
     const animSrc = icon.dataset.animSrc;
-    if (!staticSrc || !animSrc) {
-        return;
-    }
-
-    if (icon.dataset.animating === "1") {
-        return;
-    }
-
     icon.dataset.animating = "1";
     icon.src = `${animSrc}?t=${Date.now()}`;
-    setTimeout(() => {
-        icon.src = staticSrc;
-        icon.dataset.animating = "0";
-    }, 700);
+    setTimeout(() => { icon.src = staticSrc; icon.dataset.animating = "0"; }, 700);
 }
 
 function applyFilters(items) {
     const term = state.currentSearchTerm.trim().toLowerCase();
     return items.filter((item) => {
-        const matchesTerm = !term
-            || item.name.toLowerCase().includes(term)
-            || item.sku.toLowerCase().includes(term)
-            || item.id.toLowerCase().includes(term)
-            || item.company.toLowerCase().includes(term);
+        const matchesTerm = !term || item.name.toLowerCase().includes(term) || item.sku.toLowerCase().includes(term) || item.id.toLowerCase().includes(term) || item.company.toLowerCase().includes(term);
         const matchesCompany = !state.selectedCompany || item.company === state.selectedCompany;
         const matchesId = !state.selectedId || item.id === state.selectedId;
         return matchesTerm && matchesCompany && matchesId;
@@ -385,22 +270,20 @@ function updateFilterOptions(items) {
     const companies = [...new Set(items.map((item) => item.company))].sort();
     const ids = [...new Set(items.map((item) => item.id))].sort();
 
-    elements.companyFilter.innerHTML = `<option value="">All Companies</option>${companies
-        .map((company) => `<option value="${company}">${company}</option>`)
-        .join("")}`;
-    elements.idFilter.innerHTML = `<option value="">All IDs</option>${ids
-        .map((id) => `<option value="${id}">${id}</option>`)
-        .join("")}`;
+    elements.companyFilter.innerHTML = `<option value="">All Companies</option>${companies.map((company) => `<option value="${company}">${company}</option>`).join("")}`;
+    elements.idFilter.innerHTML = `<option value="">All IDs</option>${ids.map((id) => `<option value="${id}">${id}</option>`).join("")}`;
 
     elements.companyFilter.value = companies.includes(currentCompany) ? currentCompany : "";
     elements.idFilter.value = ids.includes(currentId) ? currentId : "";
     state.selectedCompany = elements.companyFilter.value;
     state.selectedId = elements.idFilter.value;
+    
+    // Como os options mudaram, precisamos reconstruir os Custom Selects
+    setupCustomSelects();
 }
 
 function renderTable(data) {
     elements.inventoryBody.innerHTML = "";
-
     data.forEach((item, index) => {
         const row = document.createElement("tr");
         row.style.animationDelay = `${index * 25}ms`;
@@ -459,52 +342,24 @@ function renderCurrentView(filteredItems) {
 function renderDashboard(items) {
     const totalItems = items.length;
     const totalStock = items.reduce((sum, item) => sum + Number(item.stock || 0), 0);
-    const companiesMap = items.reduce((acc, item) => {
-        acc[item.company] = (acc[item.company] || 0) + Number(item.stock || 0);
-        return acc;
-    }, {});
+    const companiesMap = items.reduce((acc, item) => { acc[item.company] = (acc[item.company] || 0) + Number(item.stock || 0); return acc; }, {});
     const companiesCount = Object.keys(companiesMap).length;
-    const lowStockItems = items
-        .filter((item) => Number(item.stock) <= 100)
-        .sort((a, b) => Number(a.stock) - Number(b.stock));
+    const lowStockItems = items.filter((item) => Number(item.stock) <= 100).sort((a, b) => Number(a.stock) - Number(b.stock));
 
     elements.kpiTotalItems.textContent = `${totalItems}`;
     elements.kpiTotalStock.textContent = `${totalStock.toLocaleString("pt-BR")}`;
     elements.kpiCompanies.textContent = `${companiesCount}`;
     elements.kpiLowStock.textContent = `${lowStockItems.length}`;
 
-    const topCompanies = Object.entries(companiesMap)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 6);
+    const topCompanies = Object.entries(companiesMap).sort((a, b) => b[1] - a[1]).slice(0, 6);
     const maxStock = topCompanies[0]?.[1] || 1;
 
-    elements.companyChart.innerHTML = topCompanies.length
-        ? topCompanies.map(([company, stock]) => {
+    elements.companyChart.innerHTML = topCompanies.length ? topCompanies.map(([company, stock]) => {
             const percent = Math.max(8, Math.round((stock / maxStock) * 100));
-            return `
-                <div class="chart-row">
-                    <span class="chart-label">${company}</span>
-                    <div class="bar-track"><div class="bar-fill" style="width: ${percent}%"></div></div>
-                    <span class="chart-value">${stock.toLocaleString("pt-BR")}</span>
-                </div>
-            `;
-        }).join("")
-        : "<p>Sem dados de empresa.</p>";
+            return `<div class="chart-row"><span class="chart-label">${company}</span><div class="bar-track"><div class="bar-fill" style="width: ${percent}%"></div></div><span class="chart-value">${stock.toLocaleString("pt-BR")}</span></div>`;
+        }).join("") : "<p>Sem dados de empresa.</p>";
 
-    elements.lowStockBody.innerHTML = lowStockItems.length
-        ? lowStockItems.map((item) => `
-            <tr>
-                <td>${item.id}</td>
-                <td>${item.name}</td>
-                <td>${item.company}</td>
-                <td>${item.stock}</td>
-            </tr>
-        `).join("")
-        : `
-            <tr>
-                <td colspan="4">Nenhum item com baixo estoque.</td>
-            </tr>
-        `;
+    elements.lowStockBody.innerHTML = lowStockItems.length ? lowStockItems.map((item) => `<tr><td>${item.id}</td><td>${item.name}</td><td>${item.company}</td><td>${item.stock}</td></tr>`).join("") : `<tr><td colspan="4">Nenhum item com baixo estoque.</td></tr>`;
 }
 
 async function refreshTable() {
@@ -517,10 +372,7 @@ async function refreshTable() {
 
 async function openEditModal(itemId) {
     const itemToEdit = await inventoryService.repository.getById(itemId);
-    if (!itemToEdit) {
-        return;
-    }
-
+    if (!itemToEdit) return;
     state.editingItemId = itemToEdit.id;
     elements.pEditId.textContent = itemToEdit.id;
     elements.pEditName.value = itemToEdit.name;
@@ -529,10 +381,7 @@ async function openEditModal(itemId) {
     elements.modalEditOverlay.style.display = "flex";
 }
 
-function closeEditModal() {
-    state.editingItemId = null;
-    elements.modalEditOverlay.style.display = "none";
-}
+function closeEditModal() { state.editingItemId = null; elements.modalEditOverlay.style.display = "none"; }
 
 function openAddModal() {
     elements.pAddId.value = "Automatico";
@@ -544,170 +393,93 @@ function openAddModal() {
     elements.pAddName.focus();
 }
 
-function closeAddModal() {
-    elements.modalAddOverlay.style.display = "none";
-}
+function closeAddModal() { elements.modalAddOverlay.style.display = "none"; }
 
 async function saveEdit() {
-    if (!state.editingItemId) {
-        return;
-    }
-
-    const payload = {
-        name: elements.pEditName.value,
-        stock: elements.pEditStock.value,
-    };
-
+    if (!state.editingItemId) return;
+    const payload = { name: elements.pEditName.value, stock: elements.pEditStock.value };
     try {
         await inventoryService.updateInventoryItem(state.editingItemId, payload);
         await refreshTable();
         closeEditModal();
         showToast("success", "Item atualizado", `O item ${state.editingItemId} foi atualizado.`);
-    } catch (error) {
-        showToast("error", "Erro ao atualizar", error.message);
-    }
+    } catch (error) { showToast("error", "Erro ao atualizar", error.message); }
 }
 
 async function saveAddItem() {
-    const payload = {
-        name: elements.pAddName.value,
-        company: elements.pAddCompany.value,
-        stock: elements.pAddStock.value,
-    };
-
+    const payload = { name: elements.pAddName.value, company: elements.pAddCompany.value, stock: elements.pAddStock.value };
     try {
         const createdItem = await inventoryService.createInventoryItem(payload);
         await refreshTable();
         closeAddModal();
         showToast("success", "Item adicionado", `${createdItem.name} (${createdItem.id}) foi adicionado com sucesso.`);
-    } catch (error) {
-        showToast("error", "Erro ao adicionar", error.message);
-    }
+    } catch (error) { showToast("error", "Erro ao adicionar", error.message); }
 }
 
 async function deleteItem(itemId, itemName) {
-    const confirmed = window.confirm(`Deseja excluir ${itemName}?`);
-    if (!confirmed) {
-        return;
-    }
-
+    if (!window.confirm(`Deseja excluir ${itemName}?`)) return;
     try {
         await inventoryService.deleteInventoryItem(itemId);
         await refreshTable();
         showToast("success", "Item removido", `${itemName} foi removido.`);
-    } catch (error) {
-        showToast("error", "Erro ao remover", error.message);
-    }
+    } catch (error) { showToast("error", "Erro ao remover", error.message); }
 }
 
 function switchTab(element) {
     const tabId = element.getAttribute("data-tab");
-    if (!tabId) {
-        return;
-    }
-
+    if (!tabId) return;
     document.querySelectorAll(".tab-content").forEach((tab) => tab.classList.remove("active"));
     document.getElementById(tabId)?.classList.add("active");
-
     elements.menuItems.forEach((menuItem) => menuItem.classList.remove("inventory-active"));
     element.classList.add("inventory-active");
 }
 
 function bindEvents() {
-    elements.searchInput.addEventListener("input", async (event) => {
-        state.currentSearchTerm = event.target.value;
-        await refreshTable();
-    });
-    elements.companyFilter.addEventListener("change", async (event) => {
-        state.selectedCompany = event.target.value;
-        await refreshTable();
-    });
-    elements.idFilter.addEventListener("change", async (event) => {
-        state.selectedId = event.target.value;
-        await refreshTable();
-    });
+    elements.searchInput.addEventListener("input", async (event) => { state.currentSearchTerm = event.target.value; await refreshTable(); });
+    
+    // Atualizado para ouvir os selects originais (que recebem o evento do Custom Dropdown)
+    elements.companyFilter.addEventListener("change", async (event) => { state.selectedCompany = event.target.value; await refreshTable(); });
+    elements.idFilter.addEventListener("change", async (event) => { state.selectedId = event.target.value; await refreshTable(); });
 
     const handleActionClick = async (event) => {
         const actionButton = event.target.closest("button[data-action]");
-        if (!actionButton) {
-            return;
-        }
+        if (!actionButton) return;
         animateActionIcon(event.target);
-
         const action = actionButton.dataset.action;
         const itemId = actionButton.dataset.id;
-
-        if (action === "edit" && itemId) {
-            await openEditModal(itemId);
-        }
-
-        if (action === "delete" && itemId) {
-            await deleteItem(itemId, actionButton.dataset.name || "item");
-        }
+        if (action === "edit" && itemId) await openEditModal(itemId);
+        if (action === "delete" && itemId) await deleteItem(itemId, actionButton.dataset.name || "item");
     };
 
     elements.inventoryBody.addEventListener("click", handleActionClick);
     elements.inventoryGrid.addEventListener("click", handleActionClick);
-    elements.inventoryBody.addEventListener("mouseover", (event) => {
-        if (event.target.closest("button[data-action]")) {
-            animateActionIcon(event.target);
-        }
-    });
-    elements.inventoryGrid.addEventListener("mouseover", (event) => {
-        if (event.target.closest("button[data-action]")) {
-            animateActionIcon(event.target);
-        }
-    });
+    elements.inventoryBody.addEventListener("mouseover", (event) => { if (event.target.closest("button[data-action]")) animateActionIcon(event.target); });
+    elements.inventoryGrid.addEventListener("mouseover", (event) => { if (event.target.closest("button[data-action]")) animateActionIcon(event.target); });
 
     elements.saveEditButton.addEventListener("click", saveEdit);
     elements.cancelEditButton.addEventListener("click", closeEditModal);
     elements.saveAddButton.addEventListener("click", saveAddItem);
     elements.cancelAddButton.addEventListener("click", closeAddModal);
 
-    elements.modalEditOverlay.addEventListener("click", (event) => {
-        if (event.target === elements.modalEditOverlay) {
-            closeEditModal();
-        }
-    });
-    elements.modalAddOverlay.addEventListener("click", (event) => {
-        if (event.target === elements.modalAddOverlay) {
-            closeAddModal();
-        }
-    });
+    elements.modalEditOverlay.addEventListener("click", (event) => { if (event.target === elements.modalEditOverlay) closeEditModal(); });
+    elements.modalAddOverlay.addEventListener("click", (event) => { if (event.target === elements.modalAddOverlay) closeAddModal(); });
 
-    elements.menuItems.forEach((item) => {
-        item.addEventListener("click", () => switchTab(item));
-    });
+    elements.menuItems.forEach((item) => { item.addEventListener("click", () => switchTab(item)); });
 
     elements.addItemButton.addEventListener("click", openAddModal);
-    elements.listViewButton.addEventListener("click", async () => {
-        state.viewMode = "list";
-        elements.listViewButton.classList.add("active");
-        elements.gridViewButton.classList.remove("active");
-        await refreshTable();
-    });
-    elements.gridViewButton.addEventListener("click", async () => {
-        state.viewMode = "grid";
-        elements.gridViewButton.classList.add("active");
-        elements.listViewButton.classList.remove("active");
-        await refreshTable();
-    });
+    elements.listViewButton.addEventListener("click", async () => { state.viewMode = "list"; elements.listViewButton.classList.add("active"); elements.gridViewButton.classList.remove("active"); await refreshTable(); });
+    elements.gridViewButton.addEventListener("click", async () => { state.viewMode = "grid"; elements.gridViewButton.classList.add("active"); elements.listViewButton.classList.remove("active"); await refreshTable(); });
 }
 
 async function init() {
     bindEvents();
+    setupCustomSelects(); // Inicializa o visual Figma nas listas
     try {
         await refreshTable();
         showToast("success", "Inventario carregado", "Dados sincronizados com sucesso.");
     } catch (error) {
         console.error(error);
         showToast("error", "Falha no carregamento", error.message);
-    }
-
-    const cfg = window.SUPABASE_CONFIG;
-    const hasCfg = cfg && cfg.url && cfg.anonKey && !cfg.url.includes("YOUR_PROJECT_ID");
-    if (!hasCfg) {
-        alert("Supabase nao configurado. Atualize supabase-config.js para carregar dados reais.");
     }
 }
 

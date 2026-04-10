@@ -3,63 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Master - Edit Function</title>
+    <title>Inventory Control</title>
     
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div class="app-container">
         
-<aside class="sidebar">
+        <aside class="sidebar">
             <div class="sidebar-header">
-                <div class="logo">GS</div>
-                <span class="brand-name">STOCK MASTER</span>
+                <img src="public/logo/logo natus.png" alt="Logo Natus" class="sidebar-logo-img">
+                <span class="brand-name">INVENTORY CONTROL</span>
             </div>
             
             <nav class="menu">
-                
-<div class="menu-item inventory-active" data-tab="inventory-tab">
-                    <span class="icon">📦</span>
+                <div class="menu-item inventory-active" data-tab="inventory-tab">
+                    <img src="public/side-bar-menu/inventory.svg" alt="Inventory" class="sidebar-icon">
                     <span class="label">Inventory</span>
                 </div>
                 <div class="menu-item" data-tab="dashboard-tab">
-                    <span class="icon">📊</span>
+                    <img src="public/side-bar-menu/home select.svg" alt="Dashboard" class="sidebar-icon">
                     <span class="label">Dashboard</span>
                 </div>
                 <div class="menu-item">
-                    <span class="icon">⚙️</span>
+                    <img src="public/side-bar-menu/logo setting.svg" alt="Settings" class="sidebar-icon">
                     <span class="label">Settings</span>
                 </div>
             </nav>
 
             <div class="sidebar-footer">
                 <div class="menu-item">
-                    <span class="icon">🚪</span>
+                    <img src="public/side-bar-menu/log-out.svg" alt="Log Out" class="sidebar-icon">
                     <span class="label">Log Out</span>
                 </div>
             </div>
         </aside>
 
-        
-<main class="main-content">
+        <main class="main-content">
             
-            
-<section id="inventory-tab" class="tab-content active">
+            <section id="inventory-tab" class="tab-content active">
                 <header class="top-bar">
                     <div class="search-box">
                         <input type="text" id="searchInput" placeholder="Search product or SKU...">
                     </div>
                     
-                    
-<div class="filter-group">
-                        <select class="btn-dark-filter" id="companyFilter">
+                    <div class="filter-group">
+                        <select class="custom-select-native" id="companyFilter">
                             <option value="">All Companies</option>
                         </select>
-                        <select class="btn-dark-filter" id="idFilter">
+                        <select class="custom-select-native" id="idFilter">
                             <option value="">All IDs</option>
                         </select>
+                        
                         <button class="btn-add-item" id="addItemButton">+ Add Item</button>
                         
                         <div class="view-toggle">
@@ -85,18 +82,17 @@
                         </thead>
                         <tbody id="inventoryBody">
                             
-</tbody>
+                        </tbody>
                     </table>
                 </div>
 
                 <div class="grid-container hidden" id="inventoryGrid"></div>
             </section>
 
-            
-<section id="dashboard-tab" class="tab-content">
+            <section id="dashboard-tab" class="tab-content">
                 <div class="dashboard-header">
                     <h1>Dashboard</h1>
-                    <p>Visao geral do estoque em tempo real.</p>
+                    <p>Visão geral do estoque em tempo real.</p>
                 </div>
 
                 <div class="kpi-grid">
@@ -145,9 +141,7 @@
         </main>
     </div>
 
-    
-    
-<div id="modalEditOverlay" class="modal-overlay">
+    <div id="modalEditOverlay" class="modal-overlay">
         <div class="modal-content">
             <h3>Edit Item: <span id="pEditId"></span></h3>
             

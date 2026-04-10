@@ -320,7 +320,10 @@ table input[type="checkbox"]:checked::after { transform: scale(1); }
 .form-group { margin-bottom: 15px; }
 .form-group label { display: block; margin-bottom: 6px; font-size: 13px; color: var(--muted-gray); font-weight: 500; }
 .form-group input { width: 100%; padding: 12px 15px; border-radius: 10px; border: 1px solid var(--border-light); outline: none; transition: 0.2s; }
+.form-group select { width: 100%; }
+.form-group .custom-select-wrapper { width: 100%; min-width: 100%; }
 .form-group input:focus { border-color: var(--focus-purple); box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15); }
+.hidden-field { display: none; }
 
 .disabled-input { background-color: #f4f4f4; color: #aaa; cursor: not-allowed; }
 

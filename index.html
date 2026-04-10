@@ -56,6 +56,12 @@
                         <select class="custom-select-native" id="idFilter">
                             <option value="">All IDs</option>
                         </select>
+                        <select class="custom-select-native" id="tagFilter">
+                            <option value="">All Tags</option>
+                            <option value="Uniforme">Uniforme</option>
+                            <option value="Equipamentos">Equipamentos</option>
+                            <option value="EPI">EPI</option>
+                        </select>
                         
                         <button class="btn-add-item" id="addItemButton">+ Add Item</button>
                         
@@ -75,6 +81,7 @@
                                 <th>Product</th>
                                 <th>SKU</th>
                                 <th>Company</th>
+                                <th>Tag</th>
                                 <th>Size</th>
                                 <th>Stock</th>
                                 <th>Last Modified</th>
@@ -175,6 +182,15 @@
             </div>
 
             <div class="form-group">
+                <label>Tag</label>
+                <select class="custom-select-native" id="pEditTag">
+                    <option value="Uniforme">Uniforme</option>
+                    <option value="Equipamentos">Equipamentos</option>
+                    <option value="EPI">EPI</option>
+                </select>
+            </div>
+
+            <div class="form-group">
                 <label>Size</label>
                 <input type="text" id="pEditSize" placeholder="Ex: P, M, G, 42">
             </div>
@@ -202,7 +218,16 @@
 
             <div class="form-group">
                 <label>Company</label>
-                <input type="text" id="pAddCompany" placeholder="Ex: Veritas">
+                <select class="custom-select-native" id="pAddCompany"></select>
+            </div>
+
+            <div class="form-group">
+                <label>Tag</label>
+                <select class="custom-select-native" id="pAddTag">
+                    <option value="Uniforme">Uniforme</option>
+                    <option value="Equipamentos">Equipamentos</option>
+                    <option value="EPI">EPI</option>
+                </select>
             </div>
 
             <div class="form-group">

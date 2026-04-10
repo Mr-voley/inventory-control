@@ -1,8 +1,8 @@
 const seedInventoryData = [
-    { id: "1741D", name: "Camiseta", sku: "12569756", company: "Veritas", size: "M", stock: 1108, lastMod: "2023-04-01 10:30" },
-    { id: "1742D", name: "Camisa Longa", sku: "12569757", company: "System", size: "G", stock: 500, lastMod: "2023-04-01 11:00" },
-    { id: "1743D", name: "Calca Social", sku: "12569758", company: "Fides", size: "42", stock: 240, lastMod: "2023-04-02 09:15" },
-    { id: "1744D", name: "Bota PVC", sku: "12569759", company: "SP Serv", size: "40", stock: 85, lastMod: "2023-04-02 14:45" },
+    { id: "1741D", name: "Camiseta", sku: "12569756", company: "Veritas", tag: "Uniforme", size: "M", stock: 1108, lastMod: "2023-04-01 10:30" },
+    { id: "1742D", name: "Camisa Longa", sku: "12569757", company: "System", tag: "Uniforme", size: "G", stock: 500, lastMod: "2023-04-01 11:00" },
+    { id: "1743D", name: "Calca Social", sku: "12569758", company: "Fides", tag: "Uniforme", size: "42", stock: 240, lastMod: "2023-04-02 09:15" },
+    { id: "1744D", name: "Bota PVC", sku: "12569759", company: "SP Serv", tag: "Equipamentos", size: "-", stock: 85, lastMod: "2023-04-02 14:45" },
 ];
 
 function formatLastMod(dateValue) {
@@ -37,6 +37,7 @@ class InventoryRepository {
             sku: `${Math.floor(10000000 + Math.random() * 89999999)}`,
             name: payload.name,
             company: payload.company,
+            tag: payload.tag,
             size: payload.size || "-",
             stock: payload.stock,
             lastMod: new Date().toLocaleString("pt-BR"),
@@ -57,24 +58,24 @@ class SupabaseInventoryRepository {
         this.table = "inventory_items";
     }
     async list() {
-        const { data, error } = await this.supabase.from(this.table).select("id, name, sku, company, size, stock, last_mod").order("id", { ascending: true });
+        const { data, error } = await this.supabase.from(this.table).select("id, name, sku, company, tag, size, stock, last_mod").order("id", { ascending: true });
         if (error) throw new Error(`Falha ao listar inventario: ${error.message}`);
-        return data.map((item) => ({ id: item.id, name: item.name, sku: item.sku, company: item.company, size: item.size || "-", stock: item.stock, lastMod: formatLastMod(item.last_mod) }));
+        return data.map((item) => ({ id: item.id, name: item.name, sku: item.sku, company: item.company, tag: item.tag || "Equipamentos", size: item.size || "-", stock: item.stock, lastMod: formatLastMod(item.last_mod) }));
     }
     async getById(id) {
-        const { data, error } = await this.supabase.from(this.table).select("id, name, sku, company, size, stock, last_mod").eq("id", id).single();
+        const { data, error } = await this.supabase.from(this.table).select("id, name, sku, company, tag, size, stock, last_mod").eq("id", id).single();
         if (error) { if (error.code === "PGRST116") return null; throw new Error(`Falha ao buscar item ${id}: ${error.message}`); }
-        return { id: data.id, name: data.name, sku: data.sku, company: data.company, size: data.size || "-", stock: data.stock, lastMod: formatLastMod(data.last_mod) };
+        return { id: data.id, name: data.name, sku: data.sku, company: data.company, tag: data.tag || "Equipamentos", size: data.size || "-", stock: data.stock, lastMod: formatLastMod(data.last_mod) };
     }
     async create(payload) {
-        const { data, error } = await this.supabase.from(this.table).insert({ name: payload.name, company: payload.company, size: payload.size, stock: payload.stock, last_mod: new Date().toISOString() }).select("id, name, sku, company, size, stock, last_mod").single();
+        const { data, error } = await this.supabase.from(this.table).insert({ name: payload.name, company: payload.company, tag: payload.tag, size: payload.size, stock: payload.stock, last_mod: new Date().toISOString() }).select("id, name, sku, company, tag, size, stock, last_mod").single();
         if (error) throw new Error(`Falha ao criar item: ${error.message}`);
-        return { id: data.id, name: data.name, sku: data.sku, company: data.company, size: data.size || "-", stock: data.stock, lastMod: formatLastMod(data.last_mod) };
+        return { id: data.id, name: data.name, sku: data.sku, company: data.company, tag: data.tag || "Equipamentos", size: data.size || "-", stock: data.stock, lastMod: formatLastMod(data.last_mod) };
     }
     async updateById(id, payload) {
-        const { data, error } = await this.supabase.from(this.table).update({ ...payload, last_mod: new Date().toISOString() }).eq("id", id).select("id, name, sku, company, size, stock, last_mod").single();
+        const { data, error } = await this.supabase.from(this.table).update({ ...payload, last_mod: new Date().toISOString() }).eq("id", id).select("id, name, sku, company, tag, size, stock, last_mod").single();
         if (error) { if (error.code === "PGRST116") return null; throw new Error(`Falha ao atualizar item ${id}: ${error.message}`); }
-        return { id: data.id, name: data.name, sku: data.sku, company: data.company, size: data.size || "-", stock: data.stock, lastMod: formatLastMod(data.last_mod) };
+        return { id: data.id, name: data.name, sku: data.sku, company: data.company, tag: data.tag || "Equipamentos", size: data.size || "-", stock: data.stock, lastMod: formatLastMod(data.last_mod) };
     }
     async removeById(id) {
         const { error } = await this.supabase.from(this.table).delete().eq("id", id);
@@ -90,16 +91,18 @@ class InventoryService {
         const normalizedTerm = term.trim().toLowerCase();
         const items = await this.repository.list();
         if (!normalizedTerm) return items;
-        return items.filter((item) => (item.name.toLowerCase().includes(normalizedTerm) || item.sku.toLowerCase().includes(normalizedTerm) || item.id.toLowerCase().includes(normalizedTerm) || item.company.toLowerCase().includes(normalizedTerm)));
+        return items.filter((item) => (item.name.toLowerCase().includes(normalizedTerm) || item.sku.toLowerCase().includes(normalizedTerm) || item.id.toLowerCase().includes(normalizedTerm) || item.company.toLowerCase().includes(normalizedTerm) || (item.tag || "").toLowerCase().includes(normalizedTerm)));
     }
     async updateInventoryItem(id, payload) {
         const safeName = payload.name.trim();
         const safeStock = Number(payload.stock);
-        const safeSize = (payload.size || "").trim();
+        const safeTag = payload.tag;
+        const safeSize = safeTag === "Uniforme" ? (payload.size || "").trim() : "-";
         if (!safeName) throw new Error("Nome do produto nao pode ficar vazio.");
-        if (!safeSize) throw new Error("Tamanho nao pode ficar vazio.");
+        if (!safeTag) throw new Error("Tag e obrigatoria.");
+        if (safeTag === "Uniforme" && !safeSize) throw new Error("Tamanho e obrigatorio para Uniforme.");
         if (!Number.isInteger(safeStock) || safeStock < 0) throw new Error("Estoque precisa ser um numero inteiro maior ou igual a zero.");
-        const updatedItem = await this.repository.updateById(id, { name: safeName, size: safeSize, stock: safeStock });
+        const updatedItem = await this.repository.updateById(id, { name: safeName, tag: safeTag, size: safeSize, stock: safeStock });
         if (!updatedItem) throw new Error("Item nao encontrado para atualizacao.");
         return updatedItem;
     }
@@ -108,11 +111,13 @@ class InventoryService {
         const safeName = payload.name.trim();
         const safeCompany = payload.company.trim();
         const safeStock = Number(payload.stock);
-        const safeSize = (payload.size || "").trim();
+        const safeTag = payload.tag;
+        const safeSize = safeTag === "Uniforme" ? (payload.size || "").trim() : "-";
         if (!safeName || !safeCompany) throw new Error("Nome e empresa sao obrigatorios.");
-        if (!safeSize) throw new Error("Tamanho e obrigatorio.");
+        if (!safeTag) throw new Error("Tag e obrigatoria.");
+        if (safeTag === "Uniforme" && !safeSize) throw new Error("Tamanho e obrigatorio para Uniforme.");
         if (!Number.isInteger(safeStock) || safeStock < 0) throw new Error("Estoque precisa ser um numero inteiro.");
-        return this.repository.create({ name: safeName, company: safeCompany, size: safeSize, stock: safeStock });
+        return this.repository.create({ name: safeName, company: safeCompany, tag: safeTag, size: safeSize, stock: safeStock });
     }
 }
 
@@ -121,6 +126,7 @@ const state = {
     editingItemId: null,
     selectedCompany: "",
     selectedId: "",
+    selectedTag: "",
     selectedDashboardCompany: "",
     viewMode: "list",
     allItems: [],
@@ -133,17 +139,20 @@ const elements = {
     searchInput: document.getElementById("searchInput"),
     companyFilter: document.getElementById("companyFilter"),
     idFilter: document.getElementById("idFilter"),
+    tagFilter: document.getElementById("tagFilter"),
     modalEditOverlay: document.getElementById("modalEditOverlay"),
     modalAddOverlay: document.getElementById("modalAddOverlay"),
     pEditId: document.getElementById("pEditId"),
     pEditName: document.getElementById("pEditName"),
     pEditSku: document.getElementById("pEditSku"),
+    pEditTag: document.getElementById("pEditTag"),
     pEditSize: document.getElementById("pEditSize"),
     pEditStock: document.getElementById("pEditStock"),
     pAddId: document.getElementById("pAddId"),
     pAddName: document.getElementById("pAddName"),
     pAddSku: document.getElementById("pAddSku"),
     pAddCompany: document.getElementById("pAddCompany"),
+    pAddTag: document.getElementById("pAddTag"),
     pAddSize: document.getElementById("pAddSize"),
     pAddStock: document.getElementById("pAddStock"),
     saveEditButton: document.getElementById("saveEditButton"),
@@ -275,26 +284,47 @@ function applyFilters(items) {
         const matchesTerm = !term || item.name.toLowerCase().includes(term) || item.sku.toLowerCase().includes(term) || item.id.toLowerCase().includes(term) || item.company.toLowerCase().includes(term) || (item.size || "").toLowerCase().includes(term);
         const matchesCompany = !state.selectedCompany || item.company === state.selectedCompany;
         const matchesId = !state.selectedId || item.id === state.selectedId;
-        return matchesTerm && matchesCompany && matchesId;
+        const matchesTag = !state.selectedTag || item.tag === state.selectedTag;
+        return matchesTerm && matchesCompany && matchesId && matchesTag;
     });
 }
 
 function updateFilterOptions(items) {
     const currentCompany = state.selectedCompany;
     const currentId = state.selectedId;
+    const currentTag = state.selectedTag;
     const companies = [...new Set(items.map((item) => item.company))].sort();
     const ids = [...new Set(items.map((item) => item.id))].sort();
+    const tags = [...new Set(items.map((item) => item.tag).filter(Boolean))].sort();
 
     elements.companyFilter.innerHTML = `<option value="">All Companies</option>${companies.map((company) => `<option value="${company}">${company}</option>`).join("")}`;
     elements.idFilter.innerHTML = `<option value="">All IDs</option>${ids.map((id) => `<option value="${id}">${id}</option>`).join("")}`;
+    elements.tagFilter.innerHTML = `<option value="">All Tags</option>${tags.map((tag) => `<option value="${tag}">${tag}</option>`).join("")}`;
 
     elements.companyFilter.value = companies.includes(currentCompany) ? currentCompany : "";
     elements.idFilter.value = ids.includes(currentId) ? currentId : "";
+    elements.tagFilter.value = tags.includes(currentTag) ? currentTag : "";
     state.selectedCompany = elements.companyFilter.value;
     state.selectedId = elements.idFilter.value;
+    state.selectedTag = elements.tagFilter.value;
     
     // Como os options mudaram, precisamos reconstruir os Custom Selects
     setupCustomSelects();
+}
+
+function updateModalCompanyOptions() {
+    const companies = [...new Set(state.allItems.map((item) => item.company))].sort();
+    const addCurrent = elements.pAddCompany.value;
+    const addOptions = companies.length ? companies : ["Veritas", "Fides", "SP Serv", "System"];
+    elements.pAddCompany.innerHTML = addOptions.map((company) => `<option value="${company}">${company}</option>`).join("");
+    if (addOptions.includes(addCurrent)) elements.pAddCompany.value = addCurrent;
+}
+
+function toggleSizeFieldVisibility(tagValue, sizeInput, sizeGroup) {
+    const isUniform = tagValue === "Uniforme";
+    sizeGroup.classList.toggle("hidden-field", !isUniform);
+    sizeInput.required = isUniform;
+    if (!isUniform) sizeInput.value = "";
 }
 
 function updateDashboardCompanyFilter(items) {
@@ -318,6 +348,7 @@ function renderTable(data) {
             <td><strong>${item.name}</strong></td>
             <td><code>${item.sku}</code></td>
             <td>${item.company}</td>
+            <td>${item.tag || "-"}</td>
             <td>${item.size || "-"}</td>
             <td>${item.stock}</td>
             <td style="color: #aaa; font-size: 12px; font-style: italic;">${item.lastMod}</td>
@@ -341,6 +372,7 @@ function renderGrid(data) {
             <p><strong>ID:</strong> ${item.id}</p>
             <p><strong>SKU:</strong> ${item.sku}</p>
             <p><strong>Company:</strong> ${item.company}</p>
+            <p><strong>Tag:</strong> ${item.tag || "-"}</p>
             <p><strong>Size:</strong> ${item.size || "-"}</p>
             <p><strong>Stock:</strong> ${item.stock}</p>
             <p><strong>Last Modified:</strong> ${item.lastMod}</p>
@@ -412,6 +444,7 @@ function renderDashboard(items) {
 
 async function refreshTable() {
     state.allItems = await inventoryService.getInventory();
+    updateModalCompanyOptions();
     updateDashboardCompanyFilter(state.allItems);
     renderDashboard(state.allItems);
     updateFilterOptions(state.allItems);
@@ -426,20 +459,27 @@ async function openEditModal(itemId) {
     elements.pEditId.textContent = itemToEdit.id;
     elements.pEditName.value = itemToEdit.name;
     elements.pEditSku.value = itemToEdit.sku;
+    elements.pEditTag.value = itemToEdit.tag || "Equipamentos";
     elements.pEditSize.value = itemToEdit.size || "";
     elements.pEditStock.value = itemToEdit.stock;
+    toggleSizeFieldVisibility(elements.pEditTag.value, elements.pEditSize, elements.pEditSize.closest(".form-group"));
+    setupCustomSelects();
     elements.modalEditOverlay.style.display = "flex";
 }
 
 function closeEditModal() { state.editingItemId = null; elements.modalEditOverlay.style.display = "none"; }
 
 function openAddModal() {
+    updateModalCompanyOptions();
     elements.pAddId.value = "Automatico";
     elements.pAddName.value = "";
     elements.pAddSku.value = "Automatico";
-    elements.pAddCompany.value = "";
+    elements.pAddCompany.selectedIndex = 0;
+    elements.pAddTag.value = "Uniforme";
     elements.pAddSize.value = "";
     elements.pAddStock.value = "";
+    toggleSizeFieldVisibility(elements.pAddTag.value, elements.pAddSize, elements.pAddSize.closest(".form-group"));
+    setupCustomSelects();
     elements.modalAddOverlay.style.display = "flex";
     elements.pAddName.focus();
 }
@@ -448,7 +488,7 @@ function closeAddModal() { elements.modalAddOverlay.style.display = "none"; }
 
 async function saveEdit() {
     if (!state.editingItemId) return;
-    const payload = { name: elements.pEditName.value, size: elements.pEditSize.value, stock: elements.pEditStock.value };
+    const payload = { name: elements.pEditName.value, tag: elements.pEditTag.value, size: elements.pEditSize.value, stock: elements.pEditStock.value };
     try {
         await inventoryService.updateInventoryItem(state.editingItemId, payload);
         await refreshTable();
@@ -458,7 +498,7 @@ async function saveEdit() {
 }
 
 async function saveAddItem() {
-    const payload = { name: elements.pAddName.value, company: elements.pAddCompany.value, size: elements.pAddSize.value, stock: elements.pAddStock.value };
+    const payload = { name: elements.pAddName.value, company: elements.pAddCompany.value, tag: elements.pAddTag.value, size: elements.pAddSize.value, stock: elements.pAddStock.value };
     try {
         const createdItem = await inventoryService.createInventoryItem(payload);
         await refreshTable();
@@ -491,7 +531,10 @@ function bindEvents() {
     // Atualizado para ouvir os selects originais (que recebem o evento do Custom Dropdown)
     elements.companyFilter.addEventListener("change", async (event) => { state.selectedCompany = event.target.value; await refreshTable(); });
     elements.idFilter.addEventListener("change", async (event) => { state.selectedId = event.target.value; await refreshTable(); });
+    elements.tagFilter.addEventListener("change", async (event) => { state.selectedTag = event.target.value; await refreshTable(); });
     elements.dashboardCompanyFilter?.addEventListener("change", async (event) => { state.selectedDashboardCompany = event.target.value; await refreshTable(); });
+    elements.pAddTag.addEventListener("change", () => toggleSizeFieldVisibility(elements.pAddTag.value, elements.pAddSize, elements.pAddSize.closest(".form-group")));
+    elements.pEditTag.addEventListener("change", () => toggleSizeFieldVisibility(elements.pEditTag.value, elements.pEditSize, elements.pEditSize.closest(".form-group")));
 
     const handleActionClick = async (event) => {
         const actionButton = event.target.closest("button[data-action]");
